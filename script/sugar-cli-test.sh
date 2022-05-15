@@ -510,16 +510,21 @@ else
     HIDDEN_SETTINGS="null"
 fi
 
+PRICE=0.1
+SOL_TREASURY_ACCOUNT=$(solana address)
+SPL_TOKEN_ACCOUNT=null
+SPL_TOKEN=null
+
 cat >$CONFIG_FILE <<-EOM
 {
-    "price": 0.1,
+    "price": $PRICE,
     "number": $ITEMS,
     "symbol": "TEST",
     "sellerFeeBasisPoints": 500,
     "gatekeeper": null,
-    "solTreasuryAccount": "$(solana address)",
-    "splTokenAccount": null,
-    "splToken": null,
+    "solTreasuryAccount": "${SOL_TREASURY_ACCOUNT}",
+    "splTokenAccount": ${SPL_TOKEN_ACCOUNT},
+    "splToken": ${SPL_TOKEN},
     "goLiveDate": "$(date "+%Y-%m-%dT%T%z" | sed "s@^.\{22\}@&:@")",
     "endSettings": null,
     "whitelistMintSettings": null,
