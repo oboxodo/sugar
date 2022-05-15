@@ -56,6 +56,15 @@ BLU() { echo $'\e[1;34m'$1$'\e[0m'; }
 MAG() { echo $'\e[1;35m'$1$'\e[0m'; }
 CYN() { echo $'\e[1;36m'$1$'\e[0m'; }
 
+# Helps generate valid `null` or string JSON values
+function quote_unless_null() {
+    if [ "$1" = "null" ]; then
+        echo $1 # null
+    else
+        echo \"$1\" # "something not null but quoted"
+    fi
+}
+
 # default test templates
 function default_settings() {
     MANUAL_CACHE="n"
@@ -510,10 +519,18 @@ else
     HIDDEN_SETTINGS="null"
 fi
 
-PRICE=0.1
-SOL_TREASURY_ACCOUNT=$(solana address)
-SPL_TOKEN_ACCOUNT=null
-SPL_TOKEN=null
+if [ -z ${SPL_TOKEN+x} ]; then
+    echo "[$(date "+%T")] Paying with: SOL"
+    PRICE=0.1
+    SOL_TREASURY_ACCOUNT=$(solana address)
+    SPL_TOKEN_ACCOUNT=null
+    SPL_TOKEN=null
+else
+    echo "[$(date "+%T")] Paying with: $SPL_TOKEN"
+    PRICE=1
+    SOL_TREASURY_ACCOUNT=null
+    SPL_TOKEN_ACCOUNT=$(spl-token address --token $SPL_TOKEN --verbose | grep "Associated token address" | cut -d: -f2 | tr -d ' ')
+fi
 
 cat >$CONFIG_FILE <<-EOM
 {
@@ -522,9 +539,9 @@ cat >$CONFIG_FILE <<-EOM
     "symbol": "TEST",
     "sellerFeeBasisPoints": 500,
     "gatekeeper": null,
-    "solTreasuryAccount": "${SOL_TREASURY_ACCOUNT}",
-    "splTokenAccount": ${SPL_TOKEN_ACCOUNT},
-    "splToken": ${SPL_TOKEN},
+    "solTreasuryAccount": $(quote_unless_null $SOL_TREASURY_ACCOUNT),
+    "splTokenAccount": $(quote_unless_null $SPL_TOKEN_ACCOUNT),
+    "splToken": $(quote_unless_null $SPL_TOKEN),
     "goLiveDate": "$(date "+%Y-%m-%dT%T%z" | sed "s@^.\{22\}@&:@")",
     "endSettings": null,
     "whitelistMintSettings": null,
