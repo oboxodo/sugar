@@ -12,7 +12,6 @@ use anchor_lang::prelude::AccountMeta;
 use anyhow::Result;
 use chrono::Utc;
 use console::style;
-use rand::rngs::OsRng;
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use spl_token::{
     instruction::{initialize_mint, mint_to},
@@ -254,15 +253,13 @@ pub fn mint(
         });
 
         if wl_mint_settings.mode == WhitelistMintMode::BurnEveryTime {
-            let whitelist_burn_authority = Keypair::generate(&mut OsRng);
-
             additional_accounts.push(AccountMeta {
                 pubkey: wl_mint_settings.mint,
                 is_signer: false,
                 is_writable: true,
             });
             additional_accounts.push(AccountMeta {
-                pubkey: whitelist_burn_authority.pubkey(),
+                pubkey: payer,
                 is_signer: true,
                 is_writable: false,
             });
@@ -275,24 +272,6 @@ pub fn mint(
                         let account = Account::unpack_unchecked(&ata_data)?;
 
                         if account.amount > 0 {
-                            let approve_ix = spl_token::instruction::approve(
-                                &TOKEN_PROGRAM_ID,
-                                &whitelist_token,
-                                &whitelist_burn_authority.pubkey(),
-                                &payer,
-                                &[],
-                                1,
-                            )?;
-                            let revoke_ix = spl_token::instruction::revoke(
-                                &TOKEN_PROGRAM_ID,
-                                &whitelist_token,
-                                &payer,
-                                &[],
-                            )?;
-
-                            additional_instructions.push(approve_ix);
-                            cleanup_instructions.push(revoke_ix);
-
                             token_found = true;
                         }
                     }
@@ -303,8 +282,6 @@ pub fn mint(
             if !token_found {
                 return Err(anyhow!(ErrorCode::NoWhitelistToken));
             }
-
-            additional_signers.push(whitelist_burn_authority);
         }
     }
 
