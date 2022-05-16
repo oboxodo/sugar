@@ -377,19 +377,20 @@ pub fn mint(
 
     let sig = builder.send()?;
 
-    // Cleanup instructions, such as revoke token burn authority, require a separate transaction.
-    let mut builder = program.request();
+    info!("Minted! TxId: {}", sig);
 
     if !cleanup_instructions.is_empty() {
+        // Cleanup instructions, such as revoke token burn authority, require a separate transaction.
+        let mut builder = program.request();
+
         for instruction in cleanup_instructions {
             builder = builder.instruction(instruction);
         }
+
+        let sig2 = builder.send()?;
+
+        info!("Cleanup TxId: {}", sig2);
     }
-
-    let sig2 = builder.send()?;
-
-    info!("Minted! TxId: {}", sig);
-    info!("Cleanup TxId: {}", sig2);
 
     Ok(sig)
 }
