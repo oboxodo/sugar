@@ -1,6 +1,5 @@
 use anchor_client::{
     solana_sdk::{
-        instruction::Instruction,
         program_pack::Pack,
         pubkey::Pubkey,
         signature::{Keypair, Signature, Signer},
@@ -237,10 +236,7 @@ pub fn mint(
         1,
     )?;
 
-    let mut additional_instructions: Vec<Instruction> = Vec::new();
-    let mut cleanup_instructions: Vec<Instruction> = Vec::new();
     let mut additional_accounts: Vec<AccountMeta> = Vec::new();
-    let mut additional_signers: Vec<Keypair> = Vec::new();
 
     // Check whitelist mint settings
     if let Some(wl_mint_settings) = &candy_machine_data.whitelist_mint_settings {
@@ -333,41 +329,15 @@ pub fn mint(
         })
         .args(nft_instruction::MintNft { creator_bump });
 
-    // Add additional instructions based on candy machine settings.
-    if !additional_instructions.is_empty() {
-        for instruction in additional_instructions {
-            builder = builder.instruction(instruction);
-        }
-    }
-
     if !additional_accounts.is_empty() {
         for account in additional_accounts {
             builder = builder.accounts(account);
         }
     }
 
-    if !additional_signers.is_empty() {
-        for signer in &additional_signers {
-            builder = builder.signer(signer);
-        }
-    }
-
     let sig = builder.send()?;
 
     info!("Minted! TxId: {}", sig);
-
-    if !cleanup_instructions.is_empty() {
-        // Cleanup instructions, such as revoke token burn authority, require a separate transaction.
-        let mut builder = program.request();
-
-        for instruction in cleanup_instructions {
-            builder = builder.instruction(instruction);
-        }
-
-        let sig2 = builder.send()?;
-
-        info!("Cleanup TxId: {}", sig2);
-    }
 
     Ok(sig)
 }
