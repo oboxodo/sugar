@@ -309,8 +309,6 @@ pub fn mint(
     }
 
     if let Some(token_mint) = candy_machine_state.token_mint {
-        let transfer_authority = Keypair::generate(&mut OsRng);
-
         let user_paying_account_address = get_ata_for_mint(&token_mint, &payer);
 
         additional_accounts.push(AccountMeta {
@@ -320,34 +318,10 @@ pub fn mint(
         });
 
         additional_accounts.push(AccountMeta {
-            pubkey: transfer_authority.pubkey(),
+            pubkey: payer,
             is_signer: true,
             is_writable: false,
         });
-
-        let ata_exists = !program.rpc().get_account_data(&token_mint)?.is_empty();
-
-        if ata_exists {
-            let approve_ix = spl_token::instruction::approve(
-                &TOKEN_PROGRAM_ID,
-                &user_paying_account_address,
-                &transfer_authority.pubkey(),
-                &payer,
-                &[],
-                candy_machine_data.price,
-            )?;
-            let revoke_ix = spl_token::instruction::revoke(
-                &TOKEN_PROGRAM_ID,
-                &user_paying_account_address,
-                &payer,
-                &[],
-            )?;
-
-            additional_instructions.push(approve_ix);
-            cleanup_instructions.push(revoke_ix);
-        }
-
-        additional_signers.push(transfer_authority);
     }
 
     let metadata_pda = get_metadata_pda(&nft_mint.pubkey());
