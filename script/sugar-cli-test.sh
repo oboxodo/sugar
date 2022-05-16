@@ -513,6 +513,18 @@ fi
 
 CONFIG_FILE="config.json"
 
+if [ -z ${WHITELIST+x} ]; then
+    WHITELIST_SETTINGS="null"
+else
+    echo "[$(date "+%T")] Using whitelist: $WHITELIST"
+
+    # The following is what should be a correct whitelist config but Sugar currently has a bug not recognizing the proper `burnEveryTime` formatting.
+    # WHITELIST_SETTINGS="{\"mode\":{\"burnEveryTime\":true },\"mint\":\"$WHITELIST\",\"presale\":true,\"discountPrice\":null}"
+
+    # Until the bug is fixed, the following setting works for Sugar but doesn't follow the format documented in the Metaplex official docs
+    WHITELIST_SETTINGS="{\"mode\":\"burnEveryTime\",\"mint\":\"$WHITELIST\",\"presale\":true,\"discountPrice\":null}"
+fi
+
 if [ "$HIDDEN" = "Y" ]; then
     HIDDEN_SETTINGS="{\"name\":\"TEST Hidden Collection \",\"uri\":\"$METADATA_URL\",\"hash\":\"44kiGWWsSgdqPMvmqYgTS78Mx2BKCWzd\"}"
 else
@@ -544,7 +556,7 @@ cat >$CONFIG_FILE <<-EOM
     "splToken": $(quote_unless_null $SPL_TOKEN),
     "goLiveDate": "$(date "+%Y-%m-%dT%T%z" | sed "s@^.\{22\}@&:@")",
     "endSettings": null,
-    "whitelistMintSettings": null,
+    "whitelistMintSettings": $WHITELIST_SETTINGS,
     "hiddenSettings": $HIDDEN_SETTINGS,
     "uploadMethod": "${STORAGE}",
     "ipfsInfuraProjectId": "${INFURA_ID}",
